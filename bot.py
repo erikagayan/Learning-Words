@@ -1,11 +1,14 @@
 import logging
 import os
+from random import random
+import random
 import requests
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram import Router
 from dotenv import load_dotenv
+from aiogram import Router, F
 
 API_URL = "http://127.0.0.1:8000"
 load_dotenv()
@@ -17,6 +20,8 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
 router = Router()
+
+users_learning = {}
 
 
 @router.message(Command("start"))
@@ -68,6 +73,44 @@ async def cmd_words(message: types.Message):
             await message.answer(f"Ваши слова:\n{words_str}")
     else:
         await message.answer("Произошла ошибка при получении списка слов.")
+
+
+@router.message(Command("learn"))
+async def cmd_learn(message: types.Message):
+    """Выдает случайное слово для изучения."""
+    user = message.from_user
+    user_id = user.id
+    response = requests.get(f"{API_URL}/users/{user_id}/words")
+    if response.status_code == 200:
+        words_list = response.json()
+        if not words_list:
+            await message.answer("У вас еще нет добавленных слов.")
+        else:
+            word = random.choice(words_list)
+            if random.choice([True, False]):
+                users_learning[user_id] = (word['german'], word['russian'], 'russian')
+                await message.answer(f"Переведите слово на русский: {word['german']}")
+            else:
+                users_learning[user_id] = (word['russian'], word['german'], 'german')
+                await message.answer(f"Переведите слово на немецкий: {word['russian']}")
+    else:
+        await message.answer("Произошла ошибка при получении списка слов.")
+
+
+@router.message(F.text)
+async def check_translation(message: types.Message):
+    """Проверяет перевод слова."""
+    user = message.from_user
+    user_id = user.id
+    if user_id in users_learning:
+        original, translation, lang = users_learning[user_id]
+        user_translation = message.text.strip().lower()
+        correct_translation = translation.strip().lower()
+        if user_translation == correct_translation:
+            await message.answer("Правильно!")
+        else:
+            await message.answer(f"Неправильно. Правильный перевод: {translation}")
+        del users_learning[user_id]
 
 
 dp.include_router(router)
