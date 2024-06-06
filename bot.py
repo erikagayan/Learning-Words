@@ -97,6 +97,29 @@ async def cmd_learn(message: types.Message):
         await message.answer("Произошла ошибка при получении списка слов.")
 
 
+@router.message(Command("delete"))
+async def cmd_delete(message: types.Message):
+    """Удаляет слово из словаря пользователя."""
+    user = message.from_user
+    words = message.text.split()[1:]
+    if len(words) != 1:
+        await message.answer('Использование: /delete <ID слова>')
+        return
+
+    word_id = words[0]
+    try:
+        word_id = int(word_id)
+    except ValueError:
+        await message.answer('ID слова должен быть числом.')
+        return
+
+    response = requests.delete(f"{API_URL}/words/{word_id}")
+    if response.status_code == 200:
+        await message.answer(f"Слово с ID {word_id} удалено.")
+    else:
+        await message.answer("Произошла ошибка при удалении слова или слово не найдено.")
+
+
 @router.message(F.text)
 async def check_translation(message: types.Message):
     """Проверяет перевод слова."""

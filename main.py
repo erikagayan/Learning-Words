@@ -20,6 +20,7 @@ def get_db():
     finally:
         db.close()
 
+
 @app.post("/users/", response_model=UserRead)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(telegram_id=user.telegram_id)
@@ -27,6 +28,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     return db_user
+
 
 @app.post("/words/", response_model=WordRead)
 def create_word(word: WordCreate, db: Session = Depends(get_db)):
@@ -36,7 +38,18 @@ def create_word(word: WordCreate, db: Session = Depends(get_db)):
     db.refresh(db_word)
     return db_word
 
+
 @app.get("/users/{user_id}/words", response_model=List[WordRead])
 def get_words(user_id: int, db: Session = Depends(get_db)):
     words = db.query(Word).filter(Word.user_id == user_id).all()
     return words
+
+
+@app.delete("/words/{word_id}", response_model=WordRead)
+def delete_word(word_id: int, db: Session = Depends(get_db)):
+    word = db.query(Word).filter(Word.id == word_id).first()
+    if word is None:
+        raise HTTPException(status_code=404, detail="Word not found")
+    db.delete(word)
+    db.commit()
+    return word
