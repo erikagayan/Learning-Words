@@ -1,13 +1,42 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+
+from database.engine import *
+from database.models import User, Word
+from schemas import UserCreate, UserRead, WordCreate, WordRead
 
 app = FastAPI()
 
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+# Создание всех таблиц
+Base.metadata.create_all(bind=engine)
 
 
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
+# Зависимость, которая создает сессию для работы с базой данных
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.post("/users/", response_model=UserRead)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = User(telegram_id=user.telegram_id)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/words/", response_model=WordRead)
+def create_word(word: WordCreate, db: Session = Depends(get_db)):
+    db_word = Word(german=word.german, russian=word.russian, user_id=word.user_id)
+    db.add(db_word)
+    db.commit()
+    db.refresh(db_word)
+    return db_word
+
+@app.get("/users/{user_id}/words", response_model=List[WordRead])
+def get_words(user_id: int, db: Session = Depends(get_db)):
+    words = db.query(Word).filter(Word.user_id == user_id).all()
+    return words
