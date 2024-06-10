@@ -17,5 +17,6 @@ class Word(Base):
     german = Column(String, index=True)
     russian = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
+    user_word_id = Column(Integer)
 
     owner = relationship("User", back_populates="words")
