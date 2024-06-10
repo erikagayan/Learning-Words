@@ -29,7 +29,7 @@ async def cmd_start(message: types.Message):
     """Отправляет сообщение, когда команда /start вызвана."""
     user = message.from_user
     await message.answer(
-        f"Привет, {user.first_name}! Я помогу тебе учить немецкие слова. Используй /add для добавления нового слова и /words для просмотра своих слов."
+        f"Привет, {user.first_name}! Я помогу тебе учить немецкие слова. Используй /add для добавления нового слова, /words для просмотра своих слов, и /delete для удаления слова."
     )
     # Создаем пользователя в API
     telegram_id = user.id
@@ -69,7 +69,7 @@ async def cmd_words(message: types.Message):
         if not words_list:
             await message.answer("У вас еще нет добавленных слов.")
         else:
-            words_str = "\n".join([f"{word['german']} - {word['russian']}" for word in words_list])
+            words_str = "\n".join([f"{word['user_word_id']}: {word['german']} - {word['russian']}" for word in words_list])
             await message.answer(f"Ваши слова:\n{words_str}")
     else:
         await message.answer("Произошла ошибка при получении списка слов.")
@@ -106,18 +106,29 @@ async def cmd_delete(message: types.Message):
         await message.answer('Использование: /delete <ID слова>')
         return
 
-    word_id = words[0]
+    user_word_id = words[0]
     try:
-        word_id = int(word_id)
+        user_word_id = int(user_word_id)
     except ValueError:
         await message.answer('ID слова должен быть числом.')
         return
 
-    response = requests.delete(f"{API_URL}/words/{word_id}")
+    user_id = user.id
+    response = requests.get(f"{API_URL}/users/{user_id}/words")
     if response.status_code == 200:
-        await message.answer(f"Слово с ID {word_id} удалено.")
+        words_list = response.json()
+        word_to_delete = next((word for word in words_list if word['user_word_id'] == user_word_id), None)
+        if word_to_delete:
+            word_id = word_to_delete['id']
+            response = requests.delete(f"{API_URL}/words/{word_id}")
+            if response.status_code == 200:
+                await message.answer(f"Слово с ID {user_word_id} удалено.")
+            else:
+                await message.answer("Произошла ошибка при удалении слова.")
+        else:
+            await message.answer(f"Слово с ID {user_word_id} не найдено.")
     else:
-        await message.answer("Произошла ошибка при удалении слова или слово не найдено.")
+        await message.answer("Произошла ошибка при получении списка слов.")
 
 
 @router.message(F.text)

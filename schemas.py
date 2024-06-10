@@ -28,6 +28,7 @@ class WordCreate(WordBase):
 
 class WordRead(WordBase):
     id: int
+    user_word_id: int
 
     class Config:
         orm_mode = True
