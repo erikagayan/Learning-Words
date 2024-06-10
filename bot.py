@@ -131,6 +131,7 @@ async def cmd_delete(message: types.Message):
         await message.answer("Произошла ошибка при получении списка слов.")
 
 
+
 @router.message(F.text)
 async def check_translation(message: types.Message):
     """Проверяет перевод слова."""
