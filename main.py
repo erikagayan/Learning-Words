@@ -60,3 +60,16 @@ def delete_word(word_id: int, db: Session = Depends(get_db)):
     db.delete(word)
     db.commit()
     return word
+
+
+@app.put("/words/{word_id}", response_model=WordRead)
+def update_word(word_id: int, word: WordCreate, db: Session = Depends(get_db)):
+    db_word = db.query(Word).filter(Word.id == word_id).first()
+    if db_word is None:
+        raise HTTPException(status_code=404, detail="Word not found")
+
+    db_word.german = word.german
+    db_word.russian = word.russian
+    db.commit()
+    db.refresh(db_word)
+    return db_word
