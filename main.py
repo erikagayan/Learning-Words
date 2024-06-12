@@ -1,18 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
 from typing import List
-
-from database.engine import *
+from sqlalchemy.orm import Session
 from database.models import User, Word
+from fastapi import FastAPI, Depends, HTTPException
+from database.engine import Base, engine, SessionLocal
 from schemas import UserCreate, UserRead, WordCreate, WordRead
 
 app = FastAPI()
 
-# Создание всех таблиц
 Base.metadata.create_all(bind=engine)
 
 
-# Зависимость, которая создает сессию для работы с базой данных
 def get_db():
     db = SessionLocal()
     try:
@@ -32,14 +29,15 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/words/", response_model=WordRead)
 def create_word(word: WordCreate, db: Session = Depends(get_db)):
-    # Определение следующего user_word_id
-    max_user_word_id = db.query(Word).filter(Word.user_id == word.user_id).order_by(Word.user_word_id.desc()).first()
+    max_user_word_id = (db.query(Word).filter(Word.user_id == word.user_id).
+                        order_by(Word.user_word_id.desc()).first())
     if max_user_word_id:
         user_word_id = max_user_word_id.user_word_id + 1
     else:
         user_word_id = 1
 
-    db_word = Word(german=word.german, russian=word.russian, user_id=word.user_id, user_word_id=user_word_id)
+    db_word = Word(german=word.german, russian=word.russian,
+                   user_id=word.user_id, user_word_id=user_word_id)
     db.add(db_word)
     db.commit()
     db.refresh(db_word)
