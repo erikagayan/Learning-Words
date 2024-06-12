@@ -1,15 +1,12 @@
-import logging
 import os
-from random import random
 import random
 import requests
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram import Router
-from dotenv import load_dotenv
 from aiogram import Router, F
+from dotenv import load_dotenv
+from aiogram.filters import Command
+from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
 
 API_URL = "http://127.0.0.1:8000"
 load_dotenv()
@@ -36,13 +33,12 @@ def get_main_keyboard():
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
-    """Отправляет сообщение, когда команда /start вызвана."""
     user = message.from_user
     await message.answer(
         f"Привет, {user.first_name}! Я помогу тебе учить немецкие слова. Используй кнопки ниже для управления.",
         reply_markup=get_main_keyboard()
     )
-    # Создаем пользователя в API
+    # Creating a user in the API
     telegram_id = user.id
     response = requests.post(f"{API_URL}/users/", json={"telegram_id": telegram_id})
     if response.status_code == 200:
@@ -50,9 +46,9 @@ async def cmd_start(message: types.Message):
     else:
         await message.answer("Ваш аккаунт уже существует.")
 
+
 @router.message(Command("help"))
 async def cmd_help(message: types.Message):
-    """Отправляет список доступных команд."""
     help_text = (
         "Доступные команды:\n"
         "/start - Начать использование бота\n"
@@ -65,9 +61,10 @@ async def cmd_help(message: types.Message):
     )
     await message.answer(help_text, reply_markup=get_main_keyboard())
 
+
 @router.message(Command("add"))
 async def cmd_add(message: types.Message):
-    """Добавляет новое слово."""
+    """Adds a new word."""
     user = message.from_user
     words = message.text.split()[1:]
     if len(words) != 2:
@@ -82,9 +79,10 @@ async def cmd_add(message: types.Message):
     else:
         await message.answer("Произошла ошибка при добавлении слова.", reply_markup=get_main_keyboard())
 
+
 @router.message(Command("words"))
 async def cmd_words(message: types.Message):
-    """Выводит список слов пользователя."""
+    """Outputs a list of the user's words."""
     user = message.from_user
     user_id = user.id
     response = requests.get(f"{API_URL}/users/{user_id}/words")
@@ -98,9 +96,10 @@ async def cmd_words(message: types.Message):
     else:
         await message.answer("Произошла ошибка при получении списка слов.", reply_markup=get_main_keyboard())
 
+
 @router.message(Command("change"))
 async def cmd_change(message: types.Message):
-    """Редактирует слово."""
+    """Edits the word."""
     user = message.from_user
     args = message.text.split(maxsplit=3)
     if len(args) != 4:
@@ -117,7 +116,6 @@ async def cmd_change(message: types.Message):
     new_russian = args[3]
     user_id = user.id
 
-    # Получаем список слов пользователя для поиска слова по user_word_id
     response = requests.get(f"{API_URL}/users/{user_id}/words")
     if response.status_code == 200:
         words_list = response.json()
@@ -137,13 +135,13 @@ async def cmd_change(message: types.Message):
     else:
         await message.answer("Произошла ошибка при получении списка слов.", reply_markup=get_main_keyboard())
 
+
 @router.message(Command("learn"))
 async def cmd_learn(message: types.Message):
-    """Выдает случайное слово для изучения."""
+    """Produces a random word to study."""
     user = message.from_user
     user_id = user.id
 
-    # Получаем список слов пользователя
     response = requests.get(f"{API_URL}/users/{user_id}/words")
     if response.status_code == 200:
         words_list = response.json()
@@ -152,19 +150,20 @@ async def cmd_learn(message: types.Message):
         else:
             word = random.choice(words_list)
             if random.choice([True, False]):
-                # Немецкое слово, перевод на русский
+                # German word, translation into Russian
                 users_learning[user_id] = (word['german'], word['russian'], 'russian')
                 await message.answer(f"Переведите слово на русский: {word['german']}", reply_markup=get_main_keyboard())
             else:
-                # Русское слово, перевод на немецкий
+                # Russian word, German translation
                 users_learning[user_id] = (word['russian'], word['german'], 'german')
                 await message.answer(f"Переведите слово на немецкий: {word['russian']}", reply_markup=get_main_keyboard())
     else:
         await message.answer("Произошла ошибка при получении списка слов.", reply_markup=get_main_keyboard())
 
+
 @router.message(Command("delete"))
 async def cmd_delete(message: types.Message):
-    """Удаляет слово из словаря пользователя."""
+    """Deletes a word from the user's dictionary."""
     user = message.from_user
     words = message.text.split()[1:]
     if len(words) != 1:
@@ -195,9 +194,10 @@ async def cmd_delete(message: types.Message):
     else:
         await message.answer("Произошла ошибка при получении списка слов.", reply_markup=get_main_keyboard())
 
+
 @router.message(F.text)
 async def check_translation(message: types.Message):
-    """Проверяет перевод слова."""
+    """Checks the translation of the word."""
     user = message.from_user
     user_id = user.id
     if user_id in users_learning:
@@ -207,13 +207,16 @@ async def check_translation(message: types.Message):
         if user_translation == correct_translation:
             await message.answer("Правильно!", reply_markup=get_main_keyboard())
         else:
-            await message.answer(f"Неправильно. Правильный перевод: {translation}", reply_markup=get_main_keyboard())
+            await message.answer(f"Неправильно. Правильный перевод: "
+                                 f"{translation}",
+                                 reply_markup=get_main_keyboard())
         del users_learning[user_id]
 
 dp.include_router(router)
 
+
 async def main():
-    """Запускает бота."""
+    """Starts the bot."""
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
