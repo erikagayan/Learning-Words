@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import List
 from sqlalchemy.orm import Session
@@ -9,6 +10,8 @@ from schemas import UserCreate, UserRead, WordCreate, WordRead
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
+
+logging.basicConfig(level=logging.INFO)
 
 
 def get_db():
@@ -30,13 +33,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/words/", response_model=WordRead)
 def create_word(word: WordCreate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.telegram_id == word.user_id).first()
-    if user is None:
-        user = User(telegram_id=word.user_id)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
+    logging.info(f"Received word: {word}")
     max_user_word_id = (db.query(Word).filter(Word.user_id == word.user_id).
                         order_by(Word.user_word_id.desc()).first())
     if max_user_word_id:
@@ -45,18 +42,18 @@ def create_word(word: WordCreate, db: Session = Depends(get_db)):
         user_word_id = 1
 
     db_word = Word(german=word.german, russian=word.russian,
-                   user_id=user.id, user_word_id=user_word_id)
+                   user_id=word.user_id, user_word_id=user_word_id)
     db.add(db_word)
     db.commit()
     db.refresh(db_word)
-    print(f"Создано слово: {db_word}")
     return db_word
 
 
 @app.get("/users/{user_id}/words", response_model=List[WordRead])
 def get_words(user_id: int, db: Session = Depends(get_db)):
+    logging.info(f"Fetching words for user_id: {user_id}")
     words = db.query(Word).filter(Word.user_id == user_id).all()
-    print(f"Слова для пользователя {user_id}: {words}")
+    logging.info(f"Fetched words: {words}")
     return words
 
 
