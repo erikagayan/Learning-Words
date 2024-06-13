@@ -8,7 +8,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = "https://learning-words-15d7fade2689.herokuapp.com/"
+#API_URL = "http://127.0.0.1:8000"
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 if not API_TOKEN:
