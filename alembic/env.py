@@ -1,12 +1,8 @@
-from __future__ import with_statement
-import sys
 import os
-from alembic import context
-from sqlalchemy import engine_from_config, pool
 from logging.config import fileConfig
 
-sys.path.append(os.getcwd())
-from database.models import Base  # замените на правильный импорт вашей модели
+from sqlalchemy import engine_from_config, pool
+from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -17,10 +13,16 @@ fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
+from database.models import Base  # замените на правильный импорт вашей модели
 target_metadata = Base.metadata
 
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
+
 def get_url():
-    return os.getenv("DATABASE_URL")
+    return os.getenv("DATABASE_URL_FIXED")
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""
