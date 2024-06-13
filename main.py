@@ -29,6 +29,13 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/words/", response_model=WordRead)
 def create_word(word: WordCreate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.telegram_id == word.user_id).first()
+    if user is None:
+        user = User(telegram_id=word.user_id)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
     max_user_word_id = (db.query(Word).filter(Word.user_id == word.user_id).
                         order_by(Word.user_word_id.desc()).first())
     if max_user_word_id:
@@ -37,7 +44,7 @@ def create_word(word: WordCreate, db: Session = Depends(get_db)):
         user_word_id = 1
 
     db_word = Word(german=word.german, russian=word.russian,
-                   user_id=word.user_id, user_word_id=user_word_id)
+                   user_id=user.id, user_word_id=user_word_id)
     db.add(db_word)
     db.commit()
     db.refresh(db_word)
