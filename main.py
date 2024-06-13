@@ -19,11 +19,6 @@ def get_db():
         db.close()
 
 
-@app.on_event("startup")
-def startup_event():
-    print("DATABASE_URL_FIXED:", os.getenv("DATABASE_URL_FIXED"))
-
-
 @app.post("/users/", response_model=UserRead)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(telegram_id=user.telegram_id)
@@ -54,12 +49,14 @@ def create_word(word: WordCreate, db: Session = Depends(get_db)):
     db.add(db_word)
     db.commit()
     db.refresh(db_word)
+    print(f"Создано слово: {db_word}")
     return db_word
 
 
 @app.get("/users/{user_id}/words", response_model=List[WordRead])
 def get_words(user_id: int, db: Session = Depends(get_db)):
     words = db.query(Word).filter(Word.user_id == user_id).all()
+    print(f"Слова для пользователя {user_id}: {words}")
     return words
 
 
