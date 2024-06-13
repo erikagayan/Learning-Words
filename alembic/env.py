@@ -1,8 +1,12 @@
+from __future__ import with_statement
 import os
+import sys
 from logging.config import fileConfig
-
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+from dotenv import load_dotenv
+
+load_dotenv()  # Загружаем переменные окружения из .env файла
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -13,7 +17,8 @@ fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from database.models import Base  # замените на правильный импорт вашей модели
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from database.engine import Base  # замените на правильный импорт вашей модели
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -22,7 +27,10 @@ target_metadata = Base.metadata
 # ... etc.
 
 def get_url():
-    return os.getenv("DATABASE_URL_FIXED")
+    url = os.getenv("DATABASE_URL_FIXED")
+    if not url:
+        raise ValueError("DATABASE_URL_FIXED is not set")
+    return url
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""
