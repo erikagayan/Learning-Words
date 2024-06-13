@@ -1,3 +1,4 @@
+import os
 from typing import List
 from sqlalchemy.orm import Session
 from database.models import User, Word
@@ -16,6 +17,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@app.on_event("startup")
+def startup_event():
+    print("DATABASE_URL_FIXED:", os.getenv("DATABASE_URL_FIXED"))
 
 
 @app.post("/users/", response_model=UserRead)
