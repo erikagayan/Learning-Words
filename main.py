@@ -34,6 +34,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 @app.post("/words/", response_model=WordRead)
 def create_word(word: WordCreate, db: Session = Depends(get_db)):
     logging.info(f"Adding word: {word.german} for user_id: {word.user_id}")
+
+    # Проверка наличия пользователя по telegram_id
     user = db.query(User).filter(User.telegram_id == word.user_id).first()
     if not user:
         logging.info(f"User with id {word.user_id} does not exist. Creating new user.")
@@ -43,7 +45,7 @@ def create_word(word: WordCreate, db: Session = Depends(get_db)):
         db.refresh(new_user)
         user = new_user
 
-    max_user_word_id = (db.query(Word).filter(Word.user_id == word.user_id).
+    max_user_word_id = (db.query(Word).filter(Word.user_id == user.id).
                         order_by(Word.user_word_id.desc()).first())
     if max_user_word_id:
         user_word_id = max_user_word_id.user_word_id + 1
@@ -51,7 +53,7 @@ def create_word(word: WordCreate, db: Session = Depends(get_db)):
         user_word_id = 1
 
     db_word = Word(german=word.german, russian=word.russian,
-                   user_id=word.user_id, user_word_id=user_word_id)
+                   user_id=user.id, user_word_id=user_word_id)
     db.add(db_word)
     db.commit()
     db.refresh(db_word)
