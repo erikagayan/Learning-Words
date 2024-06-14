@@ -34,6 +34,11 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 @app.post("/words/", response_model=WordRead)
 def create_word(word: WordCreate, db: Session = Depends(get_db)):
     logging.info(f"Adding word: {word.german} for user_id: {word.user_id}")
+    user = db.query(User).filter(User.telegram_id == word.user_id).first()
+    if not user:
+        logging.error(f"User with id {word.user_id} does not exist.")
+        raise HTTPException(status_code=400, detail="User does not exist")
+
     max_user_word_id = (db.query(Word).filter(Word.user_id == word.user_id).
                         order_by(Word.user_word_id.desc()).first())
     if max_user_word_id:
