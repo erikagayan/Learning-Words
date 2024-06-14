@@ -33,7 +33,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/words/", response_model=WordRead)
 def create_word(word: WordCreate, db: Session = Depends(get_db)):
-    logging.info(f"Received word: {word}")
+    logging.info(f"Adding word: {word.german} for user_id: {word.user_id}")
     max_user_word_id = (db.query(Word).filter(Word.user_id == word.user_id).
                         order_by(Word.user_word_id.desc()).first())
     if max_user_word_id:
@@ -46,6 +46,7 @@ def create_word(word: WordCreate, db: Session = Depends(get_db)):
     db.add(db_word)
     db.commit()
     db.refresh(db_word)
+    logging.info(f"Added word: {db_word.german} with id: {db_word.id}")
     return db_word
 
 
