@@ -61,10 +61,17 @@ def create_word(word: WordCreate, db: Session = Depends(get_db)):
     return db_word
 
 
-@app.get("/users/{user_id}/words", response_model=List[WordRead])
-def get_words(user_id: int, db: Session = Depends(get_db)):
-    logging.info(f"Fetching words for user_id: {user_id}")
-    words = db.query(Word).filter(Word.user_id == user_id).all()
+@app.get("/users/{telegram_id}/words", response_model=List[WordRead])
+def read_user_words(telegram_id: int, db: Session = Depends(get_db)):
+    logging.info(f"Fetching words for user_id: {telegram_id}")
+
+    # Поиск пользователя по telegram_id
+    user = db.query(User).filter(User.telegram_id == telegram_id).first()
+    if not user:
+        logging.info(f"No user found with telegram_id: {telegram_id}")
+        return []
+
+    words = db.query(Word).filter(Word.user_id == user.id).all()
     logging.info(f"Fetched words: {words}")
     return words
 
